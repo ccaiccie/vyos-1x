@@ -85,18 +85,37 @@ vrrp_instance {{ group.name }} {
     track_script {
         healthcheck_{{ group.name }}
     }
-    {% endif %}
+    {% endif -%}
 }
 
-{% endfor %}
+{% endfor -%}
+
+{% for sync_group in sync_groups -%}
+vrrp_sync_group {{ sync_group.name }} {
+       group {
+            {% for member in sync_group.members -%}
+                {{ member }}
+            {% endfor -%}
+        }
+
+        {% if sync_group.conntrack_sync -%}
+            notify_master "/opt/vyatta/sbin/vyatta-vrrp-conntracksync.sh master {{ sync_group.name }}"
+            notify_backup "/opt/vyatta/sbin/vyatta-vrrp-conntracksync.sh backup {{ sync_group.name }}"
+            notify_fault "/opt/vyatta/sbin/vyatta-vrrp-conntracksync.sh fault {{ sync_group.name }}"
+        {% endif -%}
+}
+
+{% endfor -%}
 
 """
 
 def get_config():
-    data = []
+    vrrp_groups = []
+    sync_groups = []
 
     config = vyos.config.Config()
 
+    # Get the VRRP groups
     for group_name in config.list_nodes("high-availability vrrp group"):
         config.set_level("high-availability vrrp group {0}".format(group_name))
 
@@ -134,7 +153,6 @@ def get_config():
         else:
             group["preempt"] = True
 
-
         # Substitute defaults where applicable
         if not group["advertise_interval"]:
             group["advertise_interval"] = 1
@@ -147,11 +165,33 @@ def get_config():
         if not group["health_check_count"]:
             group["health_check_count"] = 3
 
-        data.append(group)
+        vrrp_groups.append(group)
 
-    return data
+    config.set_level("") 
 
-def verify(vrrp_groups):
+    # Get the sync group used for conntrack-sync
+    conntrack_sync_group = None
+    if config.exists("service conntrack-sync failover-mechanism vrrp"):
+        conntrack_sync_group = config.return_value("service conntrack-sync failover-mechanism vrrp sync-group")
+
+    # Get the sync groups
+    for sync_group_name in config.list_nodes("high-availability vrrp sync-group"):
+        config.set_level("high-availability vrrp sync-group {0}".format(sync_group_name))
+
+        sync_group = {"conntrack_sync": False}
+        sync_group["name"] = sync_group_name
+        sync_group["members"] = config.return_values("member")
+        if conntrack_sync_group:
+            if conntrack_sync_group == sync_group_name:
+                sync_group["conntrack_sync"] = True
+
+        sync_groups.append(sync_group)
+
+    return (vrrp_groups, sync_groups)
+
+def verify(data):
+    vrrp_groups, sync_groups = data
+
     for group in vrrp_groups:
         # Check required fields
         if not group["vrid"]:
@@ -174,11 +214,21 @@ def verify(vrrp_groups):
               _groups[index]["vrid"], _groups[index]["name"], _groups[index + 1]["name"], _groups[index]["interface"]))
         else:
             index += 1
+
+    # Check sync groups
+    vrrp_group_names = list(map(lambda x: x["name"], vrrp_groups))
+
+    for sync_group in sync_groups:
+        for m in sync_group["members"]:
+            if not (m in vrrp_group_names):
+                raise ConfigError("VRRP sync-group {0} refers to VRRP group {1}, but group {1} does not exist".format(sync_group["name"], m))
    
 
-def generate(vrrp_groups):
+def generate(data):
+    vrrp_groups, sync_groups = data
+
     tmpl = jinja2.Template(config_tmpl)
-    config_text = tmpl.render({"groups": vrrp_groups})
+    config_text = tmpl.render({"groups": vrrp_groups, "sync_groups": sync_groups})
     
     with open(config_file, 'w') as f:
         f.write(config_text)

@@ -5,14 +5,14 @@
       <help>High availability settings</help>
     </properties>
     <children>
-      <node name="vrrp">
+      <node name="vrrp" owner="${vyos_conf_scripts_dir}/vrrp.py">
         <properties>
           <help>Virtual Router Redundancy Protocol settings</help>
         </properties>
         <children>
           <tagNode name="group">
             <properties>
-              <help>IPv4 VRRP group</help>
+              <help>VRRP group</help>
             </properties>
             <children>
               <leafNode name="interface">
@@ -178,11 +178,6 @@
                   </leafNode>
                 </children>
               </node>
-              <leafNode name="sync-group">
-                <properties>
-                  <help>VRRP sync group</help>
-                </properties>
-              </leafNode>
               <leafNode name="virtual-address">
                 <properties>
                   <multi/>
@@ -206,6 +201,26 @@
                     <format>1-255</format>
                     <description>Virtual router identifier</description>
                   </valueHelp>
+                </properties>
+              </leafNode>
+            </children>
+          </tagNode>
+          <tagNode name="sync-group">
+            <properties>
+              <help>VRRP sync group</help>
+            </properties>
+            <children>
+              <leafNode name="member">
+                <properties>
+                  <multi/>
+                  <help>Sync group member</help>
+                  <valueHelp>
+                    <format>text</format>
+                    <description>VRRP group name</description>
+                  </valueHelp>
+                  <completionHelp>
+                    <path>high-availability vrrp group</path>
+                  </completionHelp>
                 </properties>
               </leafNode>
             </children>
