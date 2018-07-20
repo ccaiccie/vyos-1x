@@ -16,6 +16,11 @@
 import re
 import psutil
 
+def read_file(path):
+    """ Read a file to string """
+    with open(path, 'r') as f:
+        data = f.read().strip()
+    return data
 
 def colon_separated_to_dict(data_string, uniquekeys=False):
     """ Converts a string containing newline-separated entries
@@ -103,7 +108,6 @@ def seconds_to_human(s, separator=""):
     if minutes > 0:
         result = "{0}{1}{2}m".format(result, separator, minutes)
         s = s % 60
-    print(s)
 
     seconds = s
     if seconds > 0:
