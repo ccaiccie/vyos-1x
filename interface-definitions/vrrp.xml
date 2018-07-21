@@ -45,10 +45,10 @@
                       <help>VRRP password</help>
                       <valueHelp>
                         <format>text</format>
-                        <description>Password string (up to 8 characters</description>
+                        <description>Password string (up to 8 characters)</description>
                       </valueHelp>
                       <constraint>
-                        <regex>.[1-8]</regex>
+                        <regex>.{1,8}</regex>
                       </constraint>
                       <constraintErrorMessage>Password must not be longer than 8 characters</constraintErrorMessage>
                     </properties>
@@ -154,6 +154,12 @@
                     <format>1-255</format>
                     <description>Router priority (default: 100)</description>
                   </valueHelp>
+                </properties>
+              </leafNode>
+              <leafNode name="rfc3768-compatibility">
+                <properties>
+                  <valueless/>
+                  <help>Use VRRP virtual MAC address as per RFC3768</help>
                 </properties>
               </leafNode>
               <node name="transition-script">

@@ -73,13 +73,22 @@ vrrp_instance {{ group.name }} {
       {%- endif %}
     {% endif -%}
 
+    {% if group.use_vmac -%}
+      use_vmac {{group.interface}}v{{group.vrid}}
+    {% endif -%}
+
+    {% if group.auth_password -%}
+      authentication {
+        auth_pass {{ group.auth_password }}
+        auth_type {{ group.auth_type }}
+      }
+    {% endif -%}
 
     virtual_ipaddress {
     {% for addr in group.virtual_addresses -%}
         {{ addr }}
     {% endfor -%}
     }
-
 
     {% if group.health_check_script -%}
     track_script {
@@ -124,7 +133,7 @@ def get_config():
             continue
 
         # Retrieve the values
-        group = {}
+        group = {"preempt": True, "use_vmac": False}
         group["name"] = group_name
         group["vrid"] = config.return_value("vrid")
         group["interface"] = config.return_value("interface")
@@ -150,8 +159,8 @@ def get_config():
 
         if config.exists("no-preempt"):
             group["preempt"] = False
-        else:
-            group["preempt"] = True
+        if config.exists("rfc3768-compatibility"):
+            group["use_vmac"] = True
 
         # Substitute defaults where applicable
         if not group["advertise_interval"]:
@@ -164,6 +173,14 @@ def get_config():
             group["health_check_interval"] = 60
         if not group["health_check_count"]:
             group["health_check_count"] = 3
+
+        # FIXUP: translate our option for auth type to keepalived's syntax
+        # for simplicity
+        if group["auth_type"]:
+            if group["auth_type"] == "plaintext-password":
+                group["auth_type"] = "PASS"
+            else:
+                group["auth_type"] = "AH"
 
         vrrp_groups.append(group)
 
