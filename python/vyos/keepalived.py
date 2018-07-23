@@ -26,6 +26,8 @@ state_file = '/tmp/keepalived.data'
 stats_file = '/tmp/keepalived.stats'
 json_file = '/tmp/keepalived.json'
 
+state_dir = '/var/run/vyos/vrrp/'
+
 def keepalived_running():
     return vyos.util.process_running(pid_file)
 
@@ -48,6 +50,30 @@ def get_json_data():
 
 def get_statistics():
     return vyos.util.read_file(stats_file)
+
+def get_state_data():
+    return vyos.util.read_file(state_file)
+
+
+## The functions are mainly for transition script wrappers
+## to compensate for the fact that keepalived doesn't keep persistent
+## state between reloads.
+def get_old_state(group):
+    file = os.path.join(state_dir, "{0}.state".format(group))
+    if os.path.exists(file):
+        with open(file, 'r') as f:
+            data = f.read().strip()
+            return data
+    else:
+       return None
+
+def save_state(group, state):
+    if not os.path.exists(state_dir):
+        os.makedirs(state_dir)
+
+    file = os.path.join(state_dir, "{0}.state".format(group))
+    with open(file, 'w') as f:
+        f.write(state)
 
 ## These functions are for the old, and hopefully obsolete plaintext
 ## (non machine-readable) data format introduced by Vyatta back in the days

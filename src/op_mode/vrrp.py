@@ -53,11 +53,16 @@ def print_statistics():
     output = vyos.keepalived.get_statistics()
     print(output)
 
+def print_state_data():
+    vyos.keepalived.force_state_data_dump()
+    output = vyos.keepalived.get_state_data()
+    print(output)
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group()
 group.add_argument("-s", "--summary", action="store_true", help="Print VRRP summary")
 group.add_argument("-t", "--statistics", action="store_true", help="Print VRRP statistics")
+group.add_argument("-d", "--data", action="store_true", help="Print detailed VRRP data")
 
 args = parser.parse_args()
 
@@ -65,6 +70,8 @@ if args.summary:
     print_summary()
 elif args.statistics:
     print_statistics()
+elif args.data:
+    print_state_data()
 else:
     parser.print_help()
     sys.exit(1)
