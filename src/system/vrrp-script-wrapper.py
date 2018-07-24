@@ -48,6 +48,8 @@ if not args.script or not args.state or not args.group \
 old_state = vyos.keepalived.get_old_state(args.group)
 
 if (old_state is None) or (old_state != args.state):
+    exitcode = 0
+
     # Run the script and save the new state
 
     # Change the process GID to the config owners group to avoid screwing up
@@ -59,11 +61,17 @@ if (old_state is None) or (old_state != args.state):
        ret = subprocess.call([args.script, args.state, args.interface, args.group])
        if ret != 0:
            syslog.syslog(syslog.LOG_ERR, "Transition script {0} failed, exit status: {1}".format(args.script, ret))
-           sys.exit(ret)
+           exitcode = ret
     except Exception as e:
         syslog.syslog(syslog.LOG_ERR, "Failed to execute transition script {0}: {1}".format(args.script, e))
-        sys.exit(1)
+        exitcode = 1
 
-    syslog.syslog(syslog.LOG_NOTICE, "Transition script {0} executed successfully".format(args.script))
+    if exitcode == 0:
+        syslog.syslog(syslog.LOG_NOTICE, "Transition script {0} executed successfully".format(args.script))
 
     vyos.keepalived.save_state(args.group, args.state)
+else:
+    syslog.syslog(syslog.LOG_NOTICE, "State of the group {0} has not changed, not running transition script".format(args.group))
+
+syslog.closelog()
+sys.exit(exitcode)

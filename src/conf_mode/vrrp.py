@@ -17,10 +17,12 @@
 
 import os
 import sys
+import subprocess
 
 import jinja2
 
 import vyos.config
+import vyos.keepalived
 
 from vyos import ConfigError
 
@@ -94,6 +96,18 @@ vrrp_instance {{ group.name }} {
     track_script {
         healthcheck_{{ group.name }}
     }
+    {% endif -%}
+
+    {% if group.master_script -%}
+        notify_master "/usr/libexec/vyos/system/vrrp-script-wrapper.py --script {{ group.master_script }} --state master --group {{ group.name }} --interface {{ group.interface }}"
+    {% endif -%}
+
+    {% if group.backup_script -%}
+        notify_backup "/usr/libexec/vyos/system/vrrp-script-wrapper.py --script {{ group.backup_script }} --state backup --group {{ group.name }} --interface {{ group.interface }}"
+    {% endif -%}
+
+    {% if group.fault_script -%}
+        notify_fault "/usr/libexec/vyos/system/vrrp-script-wrapper.py --script {{ group.fault_script }} --state fault --group {{ group.name }} --interface {{ group.interface }}"
     {% endif -%}
 }
 
@@ -253,7 +267,13 @@ def generate(data):
 
 def apply(vrrp_groups):
     if vrrp_groups is not None:
-        os.system("sudo systemctl restart keepalived")
+        if vyos.keepalived.vrrp_running():
+            ret = subprocess.call("sudo systemctl restart keepalived.service", shell=True)
+        else:
+            ret = subprocess.call("sudo systemctl reload keepalived.service", shell=True)
+
+        if ret != 0:
+            raise ConfigError("keepalived failed to start")
     else:
         # VRRP is removed in the commit
         os.system("sudo systemctl stop keepalived")

@@ -41,10 +41,12 @@ def print_summary():
         interface = data["ifp_ifname"]
         vrid = data["vrid"]
 
-        row = [name, interface, vrid, ltrans_time]
+        state = vyos.keepalived.decode_state(data["state"])
+
+        row = [name, interface, vrid, state, ltrans_time]
         groups.append(row)
 
-    headers = ["Name", "Interface", "VRID", "Last Transition"]
+    headers = ["Name", "Interface", "VRID", "State", "Last Transition"]
     output = tabulate.tabulate(groups, headers)
     print(output)
 
@@ -65,6 +67,11 @@ group.add_argument("-t", "--statistics", action="store_true", help="Print VRRP s
 group.add_argument("-d", "--data", action="store_true", help="Print detailed VRRP data")
 
 args = parser.parse_args()
+
+# Exit early if VRRP is dead or not configured
+if not vyos.keepalived.vrrp_running():
+    print("VRRP is not running")
+    sys.exit(0)
 
 if args.summary:
     print_summary()

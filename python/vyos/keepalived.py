@@ -28,6 +28,13 @@ json_file = '/tmp/keepalived.json'
 
 state_dir = '/var/run/vyos/vrrp/'
 
+def vrrp_running():
+    if not os.path.exists(vyos.keepalived.pid_file) \
+      or not vyos.util.process_running(vyos.keepalived.pid_file):
+        return False
+    else:
+        return True
+
 def keepalived_running():
     return vyos.util.process_running(pid_file)
 
@@ -54,6 +61,20 @@ def get_statistics():
 def get_state_data():
     return vyos.util.read_file(state_file)
 
+def decode_state(code):
+    state = None
+    if code == 0:
+        state = "INIT"
+    elif code == 1:
+        state = "BACKUP"
+    elif code == 2:
+        state = "MASTER"
+    elif code == 3:
+        state = "FAULT"
+    else:
+        state = "UNKNOWN"
+
+    return state
 
 ## The functions are mainly for transition script wrappers
 ## to compensate for the fact that keepalived doesn't keep persistent
