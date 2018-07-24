@@ -102,6 +102,9 @@
                   <leafNode name="script">
                     <properties>
                       <help>Health check script file</help>
+                      <constraint>
+                        <validator name="script"/>
+                      </constraint>
                     </properties>
                   </leafNode>
                 </children>
@@ -170,16 +173,25 @@
                   <leafNode name="master">
                     <properties>
                       <help>Script to run on VRRP state transition to master</help>
+                      <constraint>
+                        <validator name="script"/>
+                      </constraint>
                     </properties>
                   </leafNode>
                   <leafNode name="backup">
                     <properties>
                       <help>Script to run on VRRP state transition to backup</help>
+                      <constraint>
+                        <validator name="script"/>
+                      </constraint>
                     </properties>
                   </leafNode>
                   <leafNode name="fault">
                     <properties>
                       <help>Script to run on VRRP state transition to fault</help>
+                      <constraint>
+                        <validator name="script"/>
+                      </constraint>
                     </properties>
                   </leafNode>
                 </children>
