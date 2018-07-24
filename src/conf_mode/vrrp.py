@@ -267,7 +267,7 @@ def generate(data):
 
 def apply(vrrp_groups):
     if vrrp_groups is not None:
-        if vyos.keepalived.vrrp_running():
+        if not vyos.keepalived.vrrp_running():
             ret = subprocess.call("sudo systemctl restart keepalived.service", shell=True)
         else:
             ret = subprocess.call("sudo systemctl reload keepalived.service", shell=True)
